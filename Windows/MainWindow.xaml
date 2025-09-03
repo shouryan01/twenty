@@ -1,0 +1,63 @@
+﻿<Window x:Class="twenty.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:twenty"
+        mc:Ignorable="d"
+        Title="twenty" Height="350" Width="400"
+        WindowStartupLocation="CenterScreen">
+    <Grid>
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+
+            <TextBlock x:Name="StatusTextBlock"
+                       Text="Ready"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,10"/>
+
+            <StackPanel x:Name="SettingsPanel" 
+                        Orientation="Horizontal" 
+                        HorizontalAlignment="Center" 
+                        Margin="0,5,0,15"
+                        Visibility="Collapsed">
+                <StackPanel Margin="0,0,10,0">
+                    <Label Content="Work Time (minutes):" HorizontalAlignment="Center"/>
+                    <TextBox x:Name="WorkTimeTextBox" Text="20" Width="100" HorizontalContentAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Margin="10,0,0,0">
+                    <Label Content="Break Time (seconds):" HorizontalAlignment="Center"/>
+                    <TextBox x:Name="BreakTimeTextBox" Text="20" Width="100" HorizontalContentAlignment="Center"/>
+                </StackPanel>
+            </StackPanel>
+
+            <TextBlock x:Name="TimerTextBlock" 
+                       Text="20:00"
+                       FontSize="72" 
+                       FontWeight="Bold"
+                       FontFamily="Segoe UI"
+                       HorizontalAlignment="Center"/>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0">
+                <Button x:Name="StartButton" Content="Start" Width="80" Margin="5" Click="StartButton_Click"/>
+                <Button x:Name="StopButton" Content="Stop" Width="80" Margin="5" Click="StopButton_Click" IsEnabled="False"/>
+                <Button x:Name="ResetButton" Content="Reset" Width="80" Margin="5" Click="ResetButton_Click"/>
+            </StackPanel>
+
+        </StackPanel>
+
+        <Button Content="⏰"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Margin="0"
+                Width="45"
+                Height="45"
+                FontSize="15"
+                FontWeight="Bold"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                ToolTip="Settings"
+                Click="SettingsButton_Click"/>
+    </Grid>
+</Window>
