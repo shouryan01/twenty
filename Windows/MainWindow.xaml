@@ -4,10 +4,29 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:twenty"
+        xmlns:tb="http://www.hardcodet.net/taskbar" 
         mc:Ignorable="d"
         Title="twenty" Height="350" Width="400"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        StateChanged="MainWindow_StateChanged"
+        Icon="icon.ico">
     <Grid>
+        <!-- NotifyIcon (System Tray Icon) -->
+        <!-- Using a more explicit Pack URI to ensure the resource is found. -->
+        <tb:TaskbarIcon x:Name="MyNotifyIcon"
+                        IconSource="pack://application:,,,/icon.ico"
+                        ToolTipText="twenty - Timer App"
+                        TrayMouseDoubleClick="NotifyIcon_DoubleClick"
+                        Visibility="Collapsed">
+            <!-- Context menu for the tray icon -->
+            <tb:TaskbarIcon.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Show" Click="ShowMenuItem_Click" />
+                    <MenuItem Header="Exit" Click="ExitMenuItem_Click" />
+                </ContextMenu>
+            </tb:TaskbarIcon.ContextMenu>
+        </tb:TaskbarIcon>
+
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
 
             <TextBlock x:Name="StatusTextBlock"
@@ -61,3 +80,4 @@
                 Click="SettingsButton_Click"/>
     </Grid>
 </Window>
+

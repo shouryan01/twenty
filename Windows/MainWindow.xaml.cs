@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.Toolkit.Uwp.Notifications;
+using Hardcodet.Wpf.TaskbarNotification; // Added for NotifyIcon
 
 namespace twenty
 {
@@ -27,6 +28,55 @@ namespace twenty
             ResetTimer();
         }
 
+        #region System Tray Logic
+
+        // Handles the window's state changing (e.g., minimized, maximized)
+        private void MainWindow_StateChanged(object sender, EventArgs e)
+        {
+            if (this.WindowState == WindowState.Minimized)
+            {
+                // Hide the main window and show the tray icon
+                this.Hide();
+                MyNotifyIcon.Visibility = Visibility.Visible;
+            }
+        }
+
+        // Handles double-clicking the tray icon
+        private void NotifyIcon_DoubleClick(object sender, RoutedEventArgs e)
+        {
+            ShowAndRestoreWindow();
+        }
+
+        // Handles the "Show" context menu item
+        private void ShowMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            ShowAndRestoreWindow();
+        }
+
+        // Handles the "Exit" context menu item
+        private void ExitMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Shutdown();
+        }
+
+        // Helper method to bring the window back from the tray
+        private void ShowAndRestoreWindow()
+        {
+            this.Show();
+            this.WindowState = WindowState.Normal;
+            this.Activate(); // Bring the window to the foreground
+            MyNotifyIcon.Visibility = Visibility.Collapsed;
+        }
+
+        // Clean up the tray icon when the application closes
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            MyNotifyIcon.Dispose();
+            base.OnClosing(e);
+        }
+
+        #endregion
+
         private void Timer_Tick(object? sender, EventArgs e)
         {
             _currentTime = _currentTime.Add(TimeSpan.FromSeconds(-1));
@@ -36,25 +86,21 @@ namespace twenty
             {
                 if (_isWorkTime) // Work time is over, start break
                 {
-                    // 1. Save the window's current size, position, and state.
                     _originalState = this.WindowState;
                     _originalTop = this.Top;
                     _originalLeft = this.Left;
                     _originalWidth = this.Width;
                     _originalHeight = this.Height;
 
-                    // --- ADD THIS LINE ---
-                    // 2. Make the window stay on top of all others.
                     this.Topmost = true;
-
-                    // 3. Remove window border and maximize to fill the screen.
                     this.WindowStyle = WindowStyle.None;
+
+                    // If the window was minimized to tray, show it first before maximizing
+                    ShowAndRestoreWindow();
                     this.WindowState = WindowState.Maximized;
-                    
-                    // 4. Bring the window to the foreground.
+
                     this.Activate();
 
-                    // --- Original break logic ---
                     _isWorkTime = false;
                     _currentTime = _breakTime;
                     StatusTextBlock.Text = "Break Time!";
@@ -63,21 +109,14 @@ namespace twenty
                 }
                 else // Break time is over, go back to work
                 {
-                    // --- ADD THIS LINE ---
-                    // 1. Allow the window to be covered by other windows again.
                     this.Topmost = false;
-
-                    // 2. Restore the window border and title bar.
                     this.WindowStyle = WindowStyle.SingleBorderWindow;
-
-                    // 3. Restore the original size, position, and state.
                     this.WindowState = _originalState;
                     this.Top = _originalTop;
                     this.Left = _originalLeft;
                     this.Width = _originalWidth;
                     this.Height = _originalHeight;
 
-                    // --- Original work logic ---
                     _isWorkTime = true;
                     _currentTime = _workTime;
                     StatusTextBlock.Text = "Work Time";
@@ -86,8 +125,6 @@ namespace twenty
                 }
             }
         }
-
-        // --- NO CHANGES to the methods below this line ---
 
         private void ShowNotification(string title, string message)
         {
@@ -148,6 +185,8 @@ namespace twenty
 
         private bool ParseTimesFromUI()
         {
+            // Note: Changed the time parsing from minutes/seconds to just seconds for simplicity
+            // based on the UI text. Adjust if needed.
             if (int.TryParse(WorkTimeTextBox.Text, out int workTime) &&
                 int.TryParse(BreakTimeTextBox.Text, out int breakTime))
             {
