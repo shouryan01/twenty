@@ -11,14 +11,11 @@
         StateChanged="MainWindow_StateChanged"
         Icon="icon.ico">
     <Grid>
-        <!-- NotifyIcon (System Tray Icon) -->
-        <!-- Using a more explicit Pack URI to ensure the resource is found. -->
         <tb:TaskbarIcon x:Name="MyNotifyIcon"
                         IconSource="pack://application:,,,/icon.ico"
                         ToolTipText="twenty - Timer App"
                         TrayMouseDoubleClick="NotifyIcon_DoubleClick"
                         Visibility="Collapsed">
-            <!-- Context menu for the tray icon -->
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="Show" Click="ShowMenuItem_Click" />
@@ -28,14 +25,12 @@
         </tb:TaskbarIcon>
 
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-
             <TextBlock x:Name="StatusTextBlock"
                        Text="Ready"
                        FontSize="24"
                        FontWeight="Bold"
                        HorizontalAlignment="Center"
                        Margin="0,0,0,10"/>
-
             <StackPanel x:Name="SettingsPanel" 
                         Orientation="Horizontal" 
                         HorizontalAlignment="Center" 
@@ -43,29 +38,25 @@
                         Visibility="Collapsed">
                 <StackPanel Margin="0,0,10,0">
                     <Label Content="Work Time (minutes):" HorizontalAlignment="Center"/>
-                    <TextBox x:Name="WorkTimeTextBox" Text="2" Width="100" HorizontalContentAlignment="Center"/>
+                    <TextBox x:Name="WorkTimeTextBox" Text="20" Width="100" HorizontalContentAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Margin="10,0,0,0">
                     <Label Content="Break Time (seconds):" HorizontalAlignment="Center"/>
-                    <TextBox x:Name="BreakTimeTextBox" Text="2" Width="100" HorizontalContentAlignment="Center"/>
+                    <TextBox x:Name="BreakTimeTextBox" Text="20" Width="100" HorizontalContentAlignment="Center"/>
                 </StackPanel>
             </StackPanel>
-
             <TextBlock x:Name="TimerTextBlock" 
                        Text="20:00"
                        FontSize="72" 
                        FontWeight="Bold"
                        FontFamily="Segoe UI"
                        HorizontalAlignment="Center"/>
-
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0">
                 <Button x:Name="StartButton" Content="Start" Width="80" Margin="5" Click="StartButton_Click"/>
                 <Button x:Name="StopButton" Content="Stop" Width="80" Margin="5" Click="StopButton_Click" IsEnabled="False"/>
                 <Button x:Name="ResetButton" Content="Reset" Width="80" Margin="5" Click="ResetButton_Click"/>
             </StackPanel>
-
         </StackPanel>
-
         <Button Content="⏰"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Bottom"

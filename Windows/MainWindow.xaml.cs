@@ -4,7 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.Toolkit.Uwp.Notifications;
-using Hardcodet.Wpf.TaskbarNotification; // Added for NotifyIcon
+using Hardcodet.Wpf.TaskbarNotification;
 
 namespace twenty
 {
@@ -30,45 +30,38 @@ namespace twenty
 
         #region System Tray Logic
 
-        // Handles the window's state changing (e.g., minimized, maximized)
         private void MainWindow_StateChanged(object sender, EventArgs e)
         {
             if (this.WindowState == WindowState.Minimized)
             {
-                // Hide the main window and show the tray icon
                 this.Hide();
                 MyNotifyIcon.Visibility = Visibility.Visible;
             }
         }
 
-        // Handles double-clicking the tray icon
         private void NotifyIcon_DoubleClick(object sender, RoutedEventArgs e)
         {
             ShowAndRestoreWindow();
         }
 
-        // Handles the "Show" context menu item
         private void ShowMenuItem_Click(object sender, RoutedEventArgs e)
         {
             ShowAndRestoreWindow();
         }
 
-        // Handles the "Exit" context menu item
         private void ExitMenuItem_Click(object sender, RoutedEventArgs e)
         {
             Application.Current.Shutdown();
         }
 
-        // Helper method to bring the window back from the tray
         private void ShowAndRestoreWindow()
         {
             this.Show();
             this.WindowState = WindowState.Normal;
-            this.Activate(); // Bring the window to the foreground
+            this.Activate();
             MyNotifyIcon.Visibility = Visibility.Collapsed;
         }
 
-        // Clean up the tray icon when the application closes
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
             MyNotifyIcon.Dispose();
@@ -84,7 +77,7 @@ namespace twenty
 
             if (_currentTime <= TimeSpan.Zero)
             {
-                if (_isWorkTime) // Work time is over, start break
+                if (_isWorkTime)
                 {
                     _originalState = this.WindowState;
                     _originalTop = this.Top;
@@ -95,7 +88,6 @@ namespace twenty
                     this.Topmost = true;
                     this.WindowStyle = WindowStyle.None;
 
-                    // If the window was minimized to tray, show it first before maximizing
                     ShowAndRestoreWindow();
                     this.WindowState = WindowState.Maximized;
 
@@ -105,9 +97,8 @@ namespace twenty
                     _currentTime = _breakTime;
                     StatusTextBlock.Text = "Break Time!";
                     StatusTextBlock.Foreground = Brushes.Green;
-                    //ShowNotification("Break Time!", "Time to rest your eyes.");
                 }
-                else // Break time is over, go back to work
+                else
                 {
                     this.Topmost = false;
                     this.WindowStyle = WindowStyle.SingleBorderWindow;
@@ -121,7 +112,6 @@ namespace twenty
                     _currentTime = _workTime;
                     StatusTextBlock.Text = "Work Time";
                     StatusTextBlock.ClearValue(TextBlock.ForegroundProperty);
-                    //ShowNotification("Work Time", "Break's over! Time to get back to it.");
                 }
             }
         }
@@ -185,8 +175,6 @@ namespace twenty
 
         private bool ParseTimesFromUI()
         {
-            // Note: Changed the time parsing from minutes/seconds to just seconds for simplicity
-            // based on the UI text. Adjust if needed.
             if (int.TryParse(WorkTimeTextBox.Text, out int workTime) &&
                 int.TryParse(BreakTimeTextBox.Text, out int breakTime))
             {
@@ -195,7 +183,7 @@ namespace twenty
                     MessageBox.Show("Time values must be positive numbers.", "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return false;
                 }
-                _workTime = TimeSpan.FromSeconds(workTime);
+                _workTime = TimeSpan.FromMinutes(workTime);
                 _breakTime = TimeSpan.FromSeconds(breakTime);
                 return true;
             }
