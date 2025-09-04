@@ -24,11 +24,11 @@
                         Visibility="Collapsed">
                 <StackPanel Margin="0,0,10,0">
                     <Label Content="Work Time (minutes):" HorizontalAlignment="Center"/>
-                    <TextBox x:Name="WorkTimeTextBox" Text="20" Width="100" HorizontalContentAlignment="Center"/>
+                    <TextBox x:Name="WorkTimeTextBox" Text="2" Width="100" HorizontalContentAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Margin="10,0,0,0">
                     <Label Content="Break Time (seconds):" HorizontalAlignment="Center"/>
-                    <TextBox x:Name="BreakTimeTextBox" Text="20" Width="100" HorizontalContentAlignment="Center"/>
+                    <TextBox x:Name="BreakTimeTextBox" Text="2" Width="100" HorizontalContentAlignment="Center"/>
                 </StackPanel>
             </StackPanel>
 
