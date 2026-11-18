@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 struct BreakView: View {
     @ObservedObject var timerManager: TimerManager
@@ -41,6 +42,39 @@ struct BreakView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black.opacity(0.85))
         .ignoresSafeArea()
+    }
+}
+
+/// Shows the break view on every screen except the main one.
+/// The main screen uses the SwiftUI "break-overlay" window.
+final class ExtraScreenOverlays {
+    static let shared = ExtraScreenOverlays()
+    private var windows: [NSWindow] = []
+
+    func show(timerManager: TimerManager) {
+        hide()
+        for screen in NSScreen.screens where screen != NSScreen.main {
+            let window = NSWindow(contentRect: screen.frame,
+                                  styleMask: [.borderless],
+                                  backing: .buffered,
+                                  defer: false,
+                                  screen: screen)
+            window.level = .mainMenu + 1
+            window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            window.backgroundColor = .clear
+            window.isOpaque = false
+            window.hasShadow = false
+            window.isReleasedWhenClosed = false
+            window.contentView = NSHostingView(rootView: BreakView(timerManager: timerManager))
+            window.setFrame(screen.frame, display: true)
+            window.orderFrontRegardless()
+            windows.append(window)
+        }
+    }
+
+    func hide() {
+        windows.forEach { $0.close() }
+        windows.removeAll()
     }
 }
 

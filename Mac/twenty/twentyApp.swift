@@ -120,8 +120,10 @@ struct twentyApp: App {
         .onChange(of: timerManager.state) { oldState, newState in
             if newState == .breaking {
                 openWindow(id: "break-overlay")
+                ExtraScreenOverlays.shared.show(timerManager: timerManager)
                 NSApplication.shared.activate(ignoringOtherApps: true)
             } else if oldState == .breaking {
+                ExtraScreenOverlays.shared.hide()
                 dismissWindow(id: "break-overlay")
             }
         }

@@ -29,3 +29,31 @@ Go to Settings > Privacy & Security > Security > Open Anyway
 <img width="1512" height="982" alt="image" src="https://github.com/user-attachments/assets/72b4c900-7a08-48ee-9f6a-cbffd61606bf" />
 
 ## Windows
+
+The Windows version is built with C# and WPF (.NET 9). It follows your Windows light or dark theme and uses the Windows 11 Mica background.
+
+<p>
+  <img src="docs/screenshots/windows-main.png" alt="Main window" width="320" />
+  <img src="docs/screenshots/windows-settings.png" alt="Settings" width="320" />
+</p>
+
+### Features
+
+- **Break overlay on every monitor.** When a break starts, a black screen with a countdown covers each monitor you have. You cannot remove it until the break ends.
+- **System tray.** The close button hides the window. The app keeps running in the system tray. To close it fully, right-click the tray icon and choose **Exit**.
+- **Start with Windows.** Turn on the switch in settings. The app then starts hidden in the tray at sign-in and starts the timer.
+- **Saved settings.** The work time (minutes) and break time (seconds) are saved between sessions. The defaults are 20 minutes and 20 seconds.
+
+### Use
+
+1. Click **Start**. The timer counts down your work time.
+2. Click the alarm clock button in the bottom-right corner to open settings. The timer and buttons are hidden while settings are open. Click it again to close settings.
+3. When the timer ends, the break screen appears.
+
+<p>
+  <img src="docs/screenshots/windows-running.png" alt="Timer running" width="320" />
+</p>
+
+The break screen, shown on every monitor:
+
+<img src="docs/screenshots/windows-break.png" alt="Break screen" width="640" />
