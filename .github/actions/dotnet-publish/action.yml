@@ -19,7 +19,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-dotnet@v4
+    - uses: actions/setup-dotnet@v6
       with:
         dotnet-version: ${{ inputs.dotnet-version }}
 
@@ -45,7 +45,7 @@ runs:
           zip -r "../dist/twenty-${{ inputs.version }}-${{ inputs.name }}.zip" .
         fi
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: twenty-${{ inputs.name }}
         path: dist/*.zip
