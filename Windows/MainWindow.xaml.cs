@@ -19,9 +19,6 @@ namespace twenty
         private TimeSpan _currentTime;
         private bool _isWorkTime = true;
 
-        private double _originalTop, _originalLeft, _originalWidth, _originalHeight;
-        private WindowState _originalState;
-
         private readonly List<Window> _overlays = new();
         private readonly List<TextBlock> _overlayTimers = new();
 
