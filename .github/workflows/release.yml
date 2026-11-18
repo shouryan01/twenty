@@ -1,0 +1,73 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  VERSION: 0.1.${{ github.run_number }}
+
+jobs:
+  build-windows:
+    name: Build Windows (x64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/build
+        with:
+          project: Windows/twenty.csproj
+          rid: win-x64
+          name: windows-x64
+          version: ${{ env.VERSION }}
+
+  # WPF does not run on macOS. This job needs a cross-platform project
+  # (for example Avalonia) at Mac/twenty.Mac.csproj. It skips until that exists.
+  build-macos:
+    name: Build macOS (Apple silicon)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check project exists
+        id: check
+        run: |
+          if [ -f Mac/twenty.Mac.csproj ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Mac/twenty.Mac.csproj not found. Skipping macOS build."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: ./.github/actions/build
+        if: steps.check.outputs.exists == 'true'
+        with:
+          project: Mac/twenty.Mac.csproj
+          rid: osx-arm64
+          name: macos-arm64
+          version: ${{ env.VERSION }}
+
+  release:
+    name: Create release
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ env.VERSION }}" artifacts/*.zip \
+            --target "${{ github.sha }}" \
+            --title "v${{ env.VERSION }}" \
+            --generate-notes
