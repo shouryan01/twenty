@@ -25,29 +25,32 @@ jobs:
           name: windows-x64
           version: ${{ env.VERSION }}
 
-  # WPF does not run on macOS. This job needs a cross-platform project
-  # (for example Avalonia) at Mac/twenty.Mac.csproj. It skips until that exists.
   build-macos:
     name: Build macOS (Apple silicon)
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check project exists
-        id: check
+
+      - name: Build app (unsigned)
+        run: >
+          xcodebuild -project Mac/twenty.xcodeproj -scheme twenty
+          -configuration Release -destination "generic/platform=macOS"
+          -derivedDataPath build ARCHS=arm64 ONLY_ACTIVE_ARCH=NO
+          MARKETING_VERSION=${{ env.VERSION }}
+          CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+          build
+
+      - name: Package
         run: |
-          if [ -f Mac/twenty.Mac.csproj ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::Mac/twenty.Mac.csproj not found. Skipping macOS build."
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-      - uses: ./.github/actions/build
-        if: steps.check.outputs.exists == 'true'
+          mkdir -p dist
+          APP=$(find build/Build/Products/Release -maxdepth 1 -name "*.app" | head -n 1)
+          ditto -c -k --keepParent "$APP" "dist/twenty-${{ env.VERSION }}-macos-arm64.zip"
+
+      - uses: actions/upload-artifact@v4
         with:
-          project: Mac/twenty.Mac.csproj
-          rid: osx-arm64
-          name: macos-arm64
-          version: ${{ env.VERSION }}
+          name: twenty-macos-arm64
+          path: dist/*.zip
+          if-no-files-found: error
 
   release:
     name: Create release
