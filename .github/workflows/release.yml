@@ -18,7 +18,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/build
+      - uses: ./.github/actions/dotnet-publish
         with:
           project: Windows/twenty.csproj
           rid: win-x64

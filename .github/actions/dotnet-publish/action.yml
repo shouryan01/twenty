@@ -1,0 +1,52 @@
+name: Build and package
+description: Publish a .NET project for one runtime and upload the zip.
+inputs:
+  project:
+    description: Path to the .csproj file
+    required: true
+  rid:
+    description: .NET runtime identifier
+    required: true
+  name:
+    description: Short platform name used in file names
+    required: true
+  version:
+    description: App version
+    required: true
+  dotnet-version:
+    description: .NET SDK version
+    default: 9.0.x
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
+
+    - name: Restore
+      shell: bash
+      run: dotnet restore "${{ inputs.project }}" -r ${{ inputs.rid }}
+
+    - name: Publish
+      shell: bash
+      run: >
+        dotnet publish "${{ inputs.project }}" -c Release -r ${{ inputs.rid }}
+        --self-contained true -p:PublishSingleFile=true
+        -p:Version=${{ inputs.version }} -o publish
+
+    - name: Package
+      shell: bash
+      run: |
+        mkdir -p dist
+        cd publish
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          7z a "../dist/twenty-${{ inputs.version }}-${{ inputs.name }}.zip" .
+        else
+          zip -r "../dist/twenty-${{ inputs.version }}-${{ inputs.name }}.zip" .
+        fi
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: twenty-${{ inputs.name }}
+        path: dist/*.zip
+        if-no-files-found: error
