@@ -14,14 +14,13 @@ env:
 
 jobs:
   build-windows:
-    name: Build Windows (x64)
+    name: Build Windows
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/dotnet-publish
         with:
           project: Windows/twenty.csproj
-          rid: win-x64
           name: windows-x64
           version: ${{ env.VERSION }}
 

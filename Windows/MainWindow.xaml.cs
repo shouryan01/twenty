@@ -6,7 +6,6 @@ using System.Windows.Interop;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
-using Microsoft.Toolkit.Uwp.Notifications;
 using Hardcodet.Wpf.TaskbarNotification;
 
 namespace twenty
@@ -19,8 +18,8 @@ namespace twenty
         private TimeSpan _currentTime;
         private bool _isWorkTime = true;
 
-        private readonly List<Window> _overlays = new();
-        private readonly List<TextBlock> _overlayTimers = new();
+        private readonly List<Window> _overlays = new List<Window>();
+        private readonly List<TextBlock> _overlayTimers = new List<TextBlock>();
 
         private delegate bool MonitorEnumProc(IntPtr hMonitor, IntPtr hdc, ref RECT rect, IntPtr data);
 
@@ -124,8 +123,8 @@ namespace twenty
             ApplyThemeResources();
             InitializeComponent();
             LoadSettings();
-            WorkTimeTextBox.TextChanged += (_, _) => SaveSettings();
-            BreakTimeTextBox.TextChanged += (_, _) => SaveSettings();
+            WorkTimeTextBox.TextChanged += (_, __) => { SaveSettings(); RefreshIdleDisplay(); };
+            BreakTimeTextBox.TextChanged += (_, __) => SaveSettings();
             _timer = new DispatcherTimer();
             _timer.Interval = TimeSpan.FromSeconds(1);
             _timer.Tick += Timer_Tick;
@@ -149,24 +148,22 @@ namespace twenty
 
         #region Saved settings
 
-        private sealed class Settings
-        {
-            public string WorkMinutes { get; set; } = "20";
-            public string BreakSeconds { get; set; } = "20";
-        }
-
         private static string SettingsPath => System.IO.Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "twenty", "settings.json");
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "twenty", "settings.txt");
 
         private void LoadSettings()
         {
             try
             {
                 if (!System.IO.File.Exists(SettingsPath)) return;
-                var s = System.Text.Json.JsonSerializer.Deserialize<Settings>(System.IO.File.ReadAllText(SettingsPath));
-                if (s == null) return;
-                if (int.TryParse(s.WorkMinutes, out int w) && w > 0) WorkTimeTextBox.Text = s.WorkMinutes;
-                if (int.TryParse(s.BreakSeconds, out int b) && b > 0) BreakTimeTextBox.Text = s.BreakSeconds;
+                foreach (var line in System.IO.File.ReadAllLines(SettingsPath))
+                {
+                    var parts = line.Split(new[] { '=' }, 2);
+                    if (parts.Length != 2) continue;
+                    if (!(int.TryParse(parts[1], out int v) && v > 0)) continue;
+                    if (parts[0] == "work") WorkTimeTextBox.Text = parts[1];
+                    else if (parts[0] == "break") BreakTimeTextBox.Text = parts[1];
+                }
             }
             catch { /* A bad settings file must not stop the app. Use the defaults. */ }
         }
@@ -179,8 +176,7 @@ namespace twenty
                 if (!(int.TryParse(WorkTimeTextBox.Text, out int w) && w > 0 &&
                       int.TryParse(BreakTimeTextBox.Text, out int b) && b > 0)) return;
                 System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(SettingsPath)!);
-                System.IO.File.WriteAllText(SettingsPath, System.Text.Json.JsonSerializer.Serialize(
-                    new Settings { WorkMinutes = WorkTimeTextBox.Text, BreakSeconds = BreakTimeTextBox.Text }));
+                System.IO.File.WriteAllText(SettingsPath, "work=" + WorkTimeTextBox.Text + "\nbreak=" + BreakTimeTextBox.Text);
             }
             catch { /* Saving is a convenience. Ignore disk errors. */ }
         }
@@ -207,7 +203,7 @@ namespace twenty
         {
             using var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(RunKeyPath);
             if (enabled)
-                key.SetValue(RunValueName, $"\"{Environment.ProcessPath}\" {StartupArg}");
+                key.SetValue(RunValueName, $"\"{System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName}\" {StartupArg}");
             else
                 key.DeleteValue(RunValueName, false);
         }
@@ -362,14 +358,6 @@ namespace twenty
             }
         }
 
-        private void ShowNotification(string title, string message)
-        {
-            new ToastContentBuilder()
-              .AddText(title)
-              .AddText(message)
-              .Show();
-        }
-
         private void StartButton_Click(object sender, RoutedEventArgs e)
         {
             if (StatusTextBlock.Text == "Ready")
@@ -419,6 +407,17 @@ namespace twenty
             StatusTextBlock.ClearValue(TextBlock.ForegroundProperty);
             StartButton.IsEnabled = true;
             StopButton.IsEnabled = false;
+        }
+
+        // While the timer is idle, the big clock shows the work time from the settings box.
+        private void RefreshIdleDisplay()
+        {
+            if (_timer == null || StatusTextBlock.Text != "Ready") return;
+            if (int.TryParse(WorkTimeTextBox.Text, out int w) && w > 0)
+            {
+                _currentTime = TimeSpan.FromMinutes(w);
+                TimerTextBlock.Text = _currentTime.ToString(@"mm\:ss");
+            }
         }
 
         private bool ParseTimesFromUI()

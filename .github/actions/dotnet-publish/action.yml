@@ -1,11 +1,8 @@
 name: Build and package
-description: Publish a .NET project for one runtime and upload the zip.
+description: Build a .NET Framework project into one exe and upload it.
 inputs:
   project:
     description: Path to the .csproj file
-    required: true
-  rid:
-    description: .NET runtime identifier
     required: true
   name:
     description: Short platform name used in file names
@@ -23,30 +20,19 @@ runs:
       with:
         dotnet-version: ${{ inputs.dotnet-version }}
 
-    - name: Restore
-      shell: bash
-      run: dotnet restore "${{ inputs.project }}" -r ${{ inputs.rid }}
-
-    - name: Publish
+    - name: Build
       shell: bash
       run: >
-        dotnet publish "${{ inputs.project }}" -c Release -r ${{ inputs.rid }}
-        --self-contained true -p:PublishSingleFile=true
-        -p:IncludeNativeLibrariesForSelfExtract=true
-        -p:EnableCompressionInSingleFile=true -p:DebugType=none
+        dotnet build "${{ inputs.project }}" -c Release
         -p:Version=${{ inputs.version }} -o publish
 
     - name: Package
       shell: bash
       run: |
         mkdir -p dist
-        if [ "$RUNNER_OS" = "Windows" ]; then
-          # One self-contained exe. No zip and no extra files.
-          cp publish/twenty.exe "dist/twenty-${{ inputs.version }}-${{ inputs.name }}.exe"
-        else
-          cd publish
-          zip -r "../dist/twenty-${{ inputs.version }}-${{ inputs.name }}.zip" .
-        fi
+        # One .exe for .NET Framework 4.8. Windows 10 and 11 include it.
+        # Costura embeds the DLLs, so there are no extra files.
+        cp publish/twenty.exe "dist/twenty-${{ inputs.version }}-${{ inputs.name }}.exe"
 
     - uses: actions/upload-artifact@v7
       with:
