@@ -44,6 +44,7 @@ jobs:
         run: |
           mkdir -p dist
           APP=$(find build/Build/Products/Release -maxdepth 1 -name "*.app" | head -n 1)
+          codesign --force --deep --sign - "$APP"
           ditto -c -k --keepParent "$APP" "dist/twenty-${{ env.VERSION }}-macos-arm64.zip"
 
       - uses: actions/upload-artifact@v7
