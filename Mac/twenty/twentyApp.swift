@@ -90,7 +90,13 @@ struct MenuContentView: View {
 
             // Settings
             VStack(spacing: 10) {
-                workDurationRow
+                durationRow(
+                    title: "Work",
+                    unit: "min",
+                    value: $timerManager.workDurationMinutes,
+                    range: 1...120,
+                    step: 1
+                )
 
                 durationRow(
                     title: "Break",
@@ -143,38 +149,6 @@ struct MenuContentView: View {
         .background(Color(nsColor: .windowBackgroundColor).opacity(0.75))
     }
 
-    private var workDurationRow: some View {
-        let valueBinding = timerManager.workUseSeconds
-            ? $timerManager.workDurationSeconds
-            : $timerManager.workDurationMinutes
-        let range: ClosedRange<Double> = timerManager.workUseSeconds ? 1...7200 : 1...120
-        let step: Double = timerManager.workUseSeconds ? 5 : 1
-
-        return HStack(spacing: 6) {
-            Text("Work")
-            Spacer()
-            TextField("", value: valueBinding, format: .number)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 44)
-                .multilineTextAlignment(.trailing)
-                .monospacedDigit()
-                .onSubmit {
-                    timerManager.clampSettings()
-                }
-            Picker("", selection: $timerManager.workUseSeconds) {
-                Text("min").tag(false)
-                Text("sec").tag(true)
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .controlSize(.small)
-            .frame(width: 68)
-            Stepper("", value: valueBinding, in: range, step: step)
-                .labelsHidden()
-                .controlSize(.small)
-        }
-    }
-
     private func durationRow(
         title: String,
         unit: String,
@@ -195,7 +169,7 @@ struct MenuContentView: View {
                 }
             Text(unit)
                 .foregroundStyle(.secondary)
-                .frame(width: 68, alignment: .leading)
+                .frame(width: 28, alignment: .leading)
             Stepper("", value: value, in: range, step: step)
                 .labelsHidden()
                 .controlSize(.small)

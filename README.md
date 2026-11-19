@@ -18,7 +18,7 @@ The Mac version is built with SwiftUI and lives in your menu bar.
 ### Features
 
 - **Break overlay on every monitor.** When a break starts, a full-screen countdown covers every connected display until the break finishes.
-- **Flexible durations.** Type or step **Work** (`min` or `sec`) and **Break** (`sec`) durations directly in the popover.
+- **Flexible durations.** Type or step **Work** (`min`) and **Break** (`sec`) durations directly in the popover.
 - **Launch at login.** Automatically starts the app and begins the work timer when you sign in.
 - **Custom sounds.** Toggle sounds on/off and pick separate macOS system sounds for break start and break end.
 
