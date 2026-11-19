@@ -28,8 +28,6 @@ class TimerManager: ObservableObject {
 
     // User settings (stored in UserDefaults for persistence)
     @AppStorage("workDurationMinutes") var workDurationMinutes: Double = 20
-    @AppStorage("workDurationSeconds") var workDurationSeconds: Double = 10
-    @AppStorage("workUseSeconds") var workUseSeconds: Bool = false
     @AppStorage("breakDurationSeconds") var breakDurationSeconds: Double = 20
     @AppStorage("soundEnabled") var soundEnabled: Bool = true
     @AppStorage("breakStartSound") var breakStartSound: String = "Bottle"
@@ -39,17 +37,11 @@ class TimerManager: ObservableObject {
     private var phaseEnd = Date()
 
     // Values are clamped so a bad setting can never give a zero or negative duration.
-    var workDuration: TimeInterval {
-        if workUseSeconds {
-            return min(max(workDurationSeconds, 1), 7200)
-        }
-        return min(max(workDurationMinutes, 1), 120) * 60
-    }
+    var workDuration: TimeInterval { min(max(workDurationMinutes, 1), 120) * 60 }
     var breakDuration: TimeInterval { min(max(breakDurationSeconds, 1), 300) }
 
     func clampSettings() {
         workDurationMinutes = min(max(workDurationMinutes.rounded(), 1), 120)
-        workDurationSeconds = min(max(workDurationSeconds.rounded(), 1), 7200)
         breakDurationSeconds = min(max(breakDurationSeconds.rounded(), 1), 300)
     }
 
