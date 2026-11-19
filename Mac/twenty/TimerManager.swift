@@ -21,17 +21,37 @@ class TimerManager: ObservableObject {
     @Published var timeRemaining: TimeInterval = 0
     @Published private(set) var phaseLength: TimeInterval = 1
 
+    static let availableSounds = [
+        "Basso", "Blow", "Bottle", "Frog", "Funk", "Glass", "Hero",
+        "Morse", "Ping", "Pop", "Purr", "Sosumi", "Submarine", "Tink"
+    ]
+
     // User settings (stored in UserDefaults for persistence)
     @AppStorage("workDurationMinutes") var workDurationMinutes: Double = 20
+    @AppStorage("workDurationSeconds") var workDurationSeconds: Double = 10
+    @AppStorage("workUseSeconds") var workUseSeconds: Bool = false
     @AppStorage("breakDurationSeconds") var breakDurationSeconds: Double = 20
     @AppStorage("soundEnabled") var soundEnabled: Bool = true
+    @AppStorage("breakStartSound") var breakStartSound: String = "Bottle"
+    @AppStorage("breakEndSound") var breakEndSound: String = "Glass"
 
     private var timer: Timer?
     private var phaseEnd = Date()
 
     // Values are clamped so a bad setting can never give a zero or negative duration.
-    var workDuration: TimeInterval { min(max(workDurationMinutes, 1), 120) * 60 }
-    var breakDuration: TimeInterval { min(max(breakDurationSeconds, 5), 300) }
+    var workDuration: TimeInterval {
+        if workUseSeconds {
+            return min(max(workDurationSeconds, 1), 7200)
+        }
+        return min(max(workDurationMinutes, 1), 120) * 60
+    }
+    var breakDuration: TimeInterval { min(max(breakDurationSeconds, 1), 300) }
+
+    func clampSettings() {
+        workDurationMinutes = min(max(workDurationMinutes.rounded(), 1), 120)
+        workDurationSeconds = min(max(workDurationSeconds.rounded(), 1), 7200)
+        breakDurationSeconds = min(max(breakDurationSeconds.rounded(), 1), 300)
+    }
 
     init() {
         // After the Mac wakes from sleep, the time away counts as a rest.
@@ -54,6 +74,7 @@ class TimerManager: ObservableObject {
     // MARK: - Control
 
     func start() {
+        clampSettings()
         startWork(playSound: false)
     }
 
@@ -67,14 +88,14 @@ class TimerManager: ObservableObject {
 
     private func startWork(playSound: Bool = true) {
         if playSound && state == .breaking {
-            play("Glass")
+            play(breakEndSound)
         }
         BreakOverlayController.shared.hide()
         begin(.working, length: workDuration)
     }
 
     private func startBreak() {
-        play("Bottle")
+        play(breakStartSound)
         begin(.breaking, length: breakDuration)
         BreakOverlayController.shared.show(timerManager: self)
     }
@@ -113,6 +134,10 @@ class TimerManager: ObservableObject {
         } else if state == .breaking {
             startWork()
         }
+    }
+
+    func previewSound(_ name: String) {
+        NSSound(named: name)?.play()
     }
 
     private func play(_ name: String) {

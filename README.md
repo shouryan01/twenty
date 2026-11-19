@@ -8,25 +8,33 @@ It forces you to take a break by taking over your screen with an overlay for 20 
 
 ## Mac
 
-The Mac version is built with SwiftUI. It is an entirely menubar based app.
+The Mac version is built with SwiftUI and lives in your menu bar.
+
+<p>
+  <img src="docs/screenshots/mac-main.png" alt="Mac menu bar popover" width="240" />
+  <img src="docs/screenshots/mac-running.png" alt="Mac timer running" width="240" />
+</p>
+
+### Features
+
+- **Break overlay on every monitor.** When a break starts, a full-screen countdown covers every connected display until the break finishes.
+- **Flexible durations.** Type or step **Work** (`min` or `sec`) and **Break** (`sec`) durations directly in the popover.
+- **Launch at login.** Automatically starts the app and begins the work timer when you sign in.
+- **Custom sounds.** Toggle sounds on/off and pick separate macOS system sounds for break start and break end.
+
+The break screen, shown on every monitor:
+
+<img src="docs/screenshots/mac-break.png" alt="Mac break screen" width="640" />
+
+### Install
 
 I do not have the paid Apple developer account currently. Because of this, Apple will block you trying to open the app because of security reasons.
 
-To get around this, download the app and try to open it. Opening will be blocked.
+To get around this, download `twenty-<version>-macos-arm64.zip` from the [Releases](../../releases) page, unzip it, and try to open `twenty.app`. Opening will be blocked.
 
-Go to Settings > Privacy & Security > Security > Open Anyway
+Go to **System Settings > Privacy & Security > Security > Open Anyway**.
 
-<img width="470" height="320" alt="image" src="https://github.com/user-attachments/assets/942dd3c0-6755-45fb-a451-f888482f3f1f" />
-
-
----
-
-
-<img width="310" height="325" alt="image" src="https://github.com/user-attachments/assets/85e9c0cb-c958-47b6-93e3-ecfafb54d109" />
-
-<img width="270" height="326" alt="image" src="https://github.com/user-attachments/assets/6a9a431c-b141-4b63-bf33-0bc370207b46" />
-
-<img width="1512" height="982" alt="image" src="https://github.com/user-attachments/assets/72b4c900-7a08-48ee-9f6a-cbffd61606bf" />
+<img width="470" height="320" alt="macOS Gatekeeper Open Anyway" src="https://github.com/user-attachments/assets/942dd3c0-6755-45fb-a451-f888482f3f1f" />
 
 ## Windows
 

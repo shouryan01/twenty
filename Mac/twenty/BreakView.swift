@@ -17,11 +17,6 @@ struct BreakView: View {
                 .font(.system(size: 48, weight: .bold))
                 .foregroundColor(.white)
 
-            Text("Look at something at least 20 feet (6 m) away.")
-                .font(.title)
-                .foregroundColor(.white.opacity(0.8))
-                .multilineTextAlignment(.center)
-
             ZStack {
                 Circle()
                     .stroke(Color.white.opacity(0.2), lineWidth: 10)

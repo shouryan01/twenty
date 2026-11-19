@@ -11,6 +11,13 @@ import SwiftUI
 struct twentyApp: App {
     @StateObject private var timerManager = TimerManager()
 
+    init() {
+        // Keep the app menu-bar-only with no Dock icon, matching the existing version.
+        DispatchQueue.main.async {
+            NSApplication.shared.setActivationPolicy(.accessory)
+        }
+    }
+
     var body: some Scene {
         // The app lives only in the menu bar. The app is set as an agent
         // (LSUIElement), so it has no Dock icon.
@@ -18,12 +25,7 @@ struct twentyApp: App {
         MenuBarExtra {
             MenuContentView(timerManager: timerManager)
         } label: {
-            HStack {
-                Image(systemName: timerManager.state == .breaking ? "eye.fill" : "eye")
-                if timerManager.state != .idle {
-                    Text(timerManager.timeFormatted)
-                }
-            }
+            Image(systemName: timerManager.state == .breaking ? "eye.fill" : "eye")
         }
         .menuBarExtraStyle(.window)
     }
@@ -31,6 +33,7 @@ struct twentyApp: App {
 
 struct MenuContentView: View {
     @ObservedObject var timerManager: TimerManager
+    @State private var isHoveringQuit = false
 
     private var statusText: String {
         switch timerManager.state {
@@ -38,10 +41,6 @@ struct MenuContentView: View {
         case .working: return "Working"
         case .breaking: return "Break"
         }
-    }
-
-    private var ringColor: Color {
-        timerManager.state == .breaking ? .green : .accentColor
     }
 
     private var launchAtLoginBinding: Binding<Bool> {
@@ -60,28 +59,17 @@ struct MenuContentView: View {
                 Spacer()
             }
 
-            // Progress ring with the time
-            ZStack {
-                Circle()
-                    .stroke(Color.secondary.opacity(0.2), lineWidth: 8)
-
-                Circle()
-                    .trim(from: 0, to: timerManager.state == .idle ? 1 : CGFloat(timerManager.progress))
-                    .stroke(ringColor.opacity(timerManager.state == .idle ? 0.25 : 1),
-                            style: StrokeStyle(lineWidth: 8, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                    .animation(.linear(duration: 0.5), value: timerManager.progress)
-
-                VStack(spacing: 2) {
-                    Text(timerManager.displayTime)
-                        .font(.system(size: 34, weight: .semibold, design: .rounded))
-                        .monospacedDigit()
-                    Text(statusText)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+            // Bold countdown timer matching Windows
+            VStack(spacing: 4) {
+                Text(statusText)
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.secondary)
+                Text(timerManager.displayTime)
+                    .font(.system(size: 56, weight: .bold, design: .rounded))
+                    .monospacedDigit()
             }
-            .frame(width: 150, height: 150)
+            .padding(.vertical, 6)
 
             Button(action: {
                 if timerManager.state == .idle {
@@ -102,20 +90,33 @@ struct MenuContentView: View {
 
             // Settings
             VStack(spacing: 10) {
-                Stepper(value: $timerManager.workDurationMinutes, in: 1...120, step: 1) {
-                    settingLabel("Work", "\(Int(timerManager.workDurationMinutes)) min")
-                }
+                workDurationRow
 
-                Stepper(value: $timerManager.breakDurationSeconds, in: 5...300, step: 5) {
-                    settingLabel("Break", "\(Int(timerManager.breakDurationSeconds)) sec")
-                }
+                durationRow(
+                    title: "Break",
+                    unit: "sec",
+                    value: $timerManager.breakDurationSeconds,
+                    range: 1...300,
+                    step: 5
+                )
 
-                Toggle("Launch at login", isOn: launchAtLoginBinding)
-                    .toggleStyle(.switch)
+                Divider()
+                    .padding(.vertical, 2)
 
-                Toggle("Sounds", isOn: $timerManager.soundEnabled)
-                    .toggleStyle(.switch)
+                toggleRow("Launch at login", isOn: launchAtLoginBinding)
+
+                toggleRow("Sounds", isOn: $timerManager.soundEnabled)
+
+                soundRow("Break start", selection: $timerManager.breakStartSound)
+                    .disabled(!timerManager.soundEnabled)
+                    .opacity(timerManager.soundEnabled ? 1 : 0.45)
+
+                soundRow("Break end", selection: $timerManager.breakEndSound)
+                    .disabled(!timerManager.soundEnabled)
+                    .opacity(timerManager.soundEnabled ? 1 : 0.45)
             }
+            .padding(12)
+            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
 
             Divider()
 
@@ -125,20 +126,109 @@ struct MenuContentView: View {
                     NSApplication.shared.terminate(nil)
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .foregroundStyle(isHoveringQuit ? Color.red : Color.secondary)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(isHoveringQuit ? Color.red.opacity(0.12) : Color.clear)
+                )
+                .onHover { isHoveringQuit = $0 }
+                .animation(.easeInOut(duration: 0.12), value: isHoveringQuit)
             }
         }
         .padding(16)
         .frame(width: 260)
+        .background(.ultraThickMaterial)
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.75))
     }
 
-    private func settingLabel(_ title: String, _ value: String) -> some View {
+    private var workDurationRow: some View {
+        let valueBinding = timerManager.workUseSeconds
+            ? $timerManager.workDurationSeconds
+            : $timerManager.workDurationMinutes
+        let range: ClosedRange<Double> = timerManager.workUseSeconds ? 1...7200 : 1...120
+        let step: Double = timerManager.workUseSeconds ? 5 : 1
+
+        return HStack(spacing: 6) {
+            Text("Work")
+            Spacer()
+            TextField("", value: valueBinding, format: .number)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 44)
+                .multilineTextAlignment(.trailing)
+                .monospacedDigit()
+                .onSubmit {
+                    timerManager.clampSettings()
+                }
+            Picker("", selection: $timerManager.workUseSeconds) {
+                Text("min").tag(false)
+                Text("sec").tag(true)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .controlSize(.small)
+            .frame(width: 68)
+            Stepper("", value: valueBinding, in: range, step: step)
+                .labelsHidden()
+                .controlSize(.small)
+        }
+    }
+
+    private func durationRow(
+        title: String,
+        unit: String,
+        value: Binding<Double>,
+        range: ClosedRange<Double>,
+        step: Double
+    ) -> some View {
+        HStack(spacing: 6) {
+            Text(title)
+            Spacer()
+            TextField("", value: value, format: .number)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 44)
+                .multilineTextAlignment(.trailing)
+                .monospacedDigit()
+                .onSubmit {
+                    timerManager.clampSettings()
+                }
+            Text(unit)
+                .foregroundStyle(.secondary)
+                .frame(width: 68, alignment: .leading)
+            Stepper("", value: value, in: range, step: step)
+                .labelsHidden()
+                .controlSize(.small)
+        }
+    }
+
+    private func toggleRow(_ title: String, isOn: Binding<Bool>) -> some View {
         HStack {
             Text(title)
             Spacer()
-            Text(value)
-                .monospacedDigit()
+            Toggle("", isOn: isOn)
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .controlSize(.small)
+        }
+    }
+
+    private func soundRow(_ title: String, selection: Binding<String>) -> some View {
+        HStack {
+            Text(title)
                 .foregroundStyle(.secondary)
+            Spacer()
+            Picker("", selection: selection) {
+                ForEach(TimerManager.availableSounds, id: \.self) { sound in
+                    Text(sound).tag(sound)
+                }
+            }
+            .labelsHidden()
+            .controlSize(.small)
+            .frame(width: 110)
+            .onChange(of: selection.wrappedValue) { _, newValue in
+                timerManager.previewSound(newValue)
+            }
         }
     }
 }
