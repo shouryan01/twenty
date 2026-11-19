@@ -37,6 +37,12 @@ The Windows version is built with C# and WPF (.NET 9). It follows your Windows l
   <img src="docs/screenshots/windows-settings.png" alt="Settings" width="320" />
 </p>
 
+### Download
+
+Download `twenty-<version>-windows-x64.exe` from the [Releases](../../releases) page and run it. It is one file. You do not need to install .NET or anything else.
+
+The app is not code-signed, so Windows SmartScreen may show "Windows protected your PC". Click **More info**, then **Run anyway**.
+
 ### Features
 
 - **Break overlay on every monitor.** When a break starts, a black screen with a countdown covers each monitor you have. You cannot remove it until the break ends.

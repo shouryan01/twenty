@@ -17,7 +17,7 @@ struct BreakView: View {
                 .font(.system(size: 48, weight: .bold))
                 .foregroundColor(.white)
 
-            Text("Look at something 20 feet away for 20 seconds.")
+            Text("Look at something at least 20 feet (6 m) away.")
                 .font(.title)
                 .foregroundColor(.white.opacity(0.8))
                 .multilineTextAlignment(.center)
@@ -28,11 +28,11 @@ struct BreakView: View {
                     .frame(width: 150, height: 150)
 
                 Circle()
-                    .trim(from: 0, to: CGFloat(timerManager.timeRemaining / timerManager.breakDuration))
+                    .trim(from: 0, to: CGFloat(timerManager.progress))
                     .stroke(Color.green, style: StrokeStyle(lineWidth: 10, lineCap: .round))
                     .frame(width: 150, height: 150)
                     .rotationEffect(.degrees(-90))
-                    .animation(.linear(duration: 1), value: timerManager.timeRemaining)
+                    .animation(.linear(duration: 0.5), value: timerManager.progress)
 
                 Text("\(Int(timerManager.timeRemaining))")
                     .font(.system(size: 60, weight: .bold, design: .monospaced))
@@ -40,20 +40,51 @@ struct BreakView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black.opacity(0.85))
+        .background(Color.black)
         .ignoresSafeArea()
     }
 }
 
-/// Shows the break view on every screen except the main one.
-/// The main screen uses the SwiftUI "break-overlay" window.
-final class ExtraScreenOverlays {
-    static let shared = ExtraScreenOverlays()
+/// Shows the break screen on every screen.
+/// This is the only code that opens break windows.
+final class BreakOverlayController {
+    static let shared = BreakOverlayController()
+
     private var windows: [NSWindow] = []
+    private weak var timerManager: TimerManager?
+    private var screenObserver: NSObjectProtocol?
 
     func show(timerManager: TimerManager) {
-        hide()
-        for screen in NSScreen.screens where screen != NSScreen.main {
+        self.timerManager = timerManager
+        rebuildWindows()
+        NSApplication.shared.activate(ignoringOtherApps: true)
+
+        // If a monitor is plugged in or removed during a break, cover the new set of screens.
+        if screenObserver == nil {
+            screenObserver = NotificationCenter.default.addObserver(
+                forName: NSApplication.didChangeScreenParametersNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.rebuildWindows()
+            }
+        }
+    }
+
+    func hide() {
+        if let observer = screenObserver {
+            NotificationCenter.default.removeObserver(observer)
+            screenObserver = nil
+        }
+        closeWindows()
+        timerManager = nil
+    }
+
+    private func rebuildWindows() {
+        closeWindows()
+        guard let timerManager = timerManager else { return }
+
+        for screen in NSScreen.screens {
             let window = NSWindow(contentRect: screen.frame,
                                   styleMask: [.borderless],
                                   backing: .buffered,
@@ -61,8 +92,8 @@ final class ExtraScreenOverlays {
                                   screen: screen)
             window.level = .mainMenu + 1
             window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-            window.backgroundColor = .clear
-            window.isOpaque = false
+            window.backgroundColor = .black
+            window.isOpaque = true
             window.hasShadow = false
             window.isReleasedWhenClosed = false
             window.contentView = NSHostingView(rootView: BreakView(timerManager: timerManager))
@@ -72,7 +103,7 @@ final class ExtraScreenOverlays {
         }
     }
 
-    func hide() {
+    private func closeWindows() {
         windows.forEach { $0.close() }
         windows.removeAll()
     }
@@ -81,4 +112,3 @@ final class ExtraScreenOverlays {
 #Preview {
     BreakView(timerManager: TimerManager())
 }
-
