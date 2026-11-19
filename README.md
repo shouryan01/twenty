@@ -47,7 +47,7 @@ The Windows version is built with C# and WPF (.NET 9). It follows your Windows l
 
 ### Download
 
-Download `twenty-<version>-windows-x64.exe` from the [Releases](../../releases) page and run it. It is one file. You do not need to install .NET or anything else.
+Download `twenty-<version>-windows-x64.exe` from the [Releases](../../releases) page and run it. It is one small file. It needs no install. It uses .NET Framework 4.8, which is part of Windows 10 and 11.
 
 The app is not code-signed, so Windows SmartScreen may show "Windows protected your PC". Click **More info**, then **Run anyway**.
 
