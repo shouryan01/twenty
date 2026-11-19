@@ -15,11 +15,11 @@ inputs:
     required: true
   dotnet-version:
     description: .NET SDK version
-    default: 9.0.x
+    default: 10.0.x
 runs:
   using: composite
   steps:
-    - uses: actions/setup-dotnet@v4
+    - uses: actions/setup-dotnet@v6
       with:
         dotnet-version: ${{ inputs.dotnet-version }}
 
@@ -32,21 +32,24 @@ runs:
       run: >
         dotnet publish "${{ inputs.project }}" -c Release -r ${{ inputs.rid }}
         --self-contained true -p:PublishSingleFile=true
+        -p:IncludeNativeLibrariesForSelfExtract=true
+        -p:EnableCompressionInSingleFile=true -p:DebugType=none
         -p:Version=${{ inputs.version }} -o publish
 
     - name: Package
       shell: bash
       run: |
         mkdir -p dist
-        cd publish
         if [ "$RUNNER_OS" = "Windows" ]; then
-          7z a "../dist/twenty-${{ inputs.version }}-${{ inputs.name }}.zip" .
+          # One self-contained exe. No zip and no extra files.
+          cp publish/twenty.exe "dist/twenty-${{ inputs.version }}-${{ inputs.name }}.exe"
         else
+          cd publish
           zip -r "../dist/twenty-${{ inputs.version }}-${{ inputs.name }}.zip" .
         fi
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: twenty-${{ inputs.name }}
-        path: dist/*.zip
+        path: dist/*
         if-no-files-found: error

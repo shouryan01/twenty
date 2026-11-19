@@ -10,119 +10,224 @@ import SwiftUI
 @main
 struct twentyApp: App {
     @StateObject private var timerManager = TimerManager()
-    @Environment(\.openWindow) private var openWindow
-    @Environment(\.dismissWindow) private var dismissWindow
 
     init() {
-        // Use a slight delay to ensure NSApplication.shared is ready
+        // Keep the app menu-bar-only with no Dock icon, matching the existing version.
         DispatchQueue.main.async {
             NSApplication.shared.setActivationPolicy(.accessory)
         }
     }
 
     var body: some Scene {
-        // The Menu Bar Extra
+        // The app lives only in the menu bar. The app is set as an agent
+        // (LSUIElement), so it has no Dock icon.
+        // The break screens are opened by BreakOverlayController.
         MenuBarExtra {
-            VStack(spacing: 15) {
-                Text("twenty 👀")
+            MenuContentView(timerManager: timerManager)
+        } label: {
+            Image(systemName: timerManager.state == .breaking ? "eye.fill" : "eye")
+        }
+        .menuBarExtraStyle(.window)
+    }
+}
+
+struct MenuContentView: View {
+    @ObservedObject var timerManager: TimerManager
+    @State private var isHoveringQuit = false
+
+    private var statusText: String {
+        switch timerManager.state {
+        case .idle: return "Ready"
+        case .working: return "Working"
+        case .breaking: return "Break"
+        }
+    }
+
+    private var launchAtLoginBinding: Binding<Bool> {
+        Binding(
+            get: { timerManager.launchAtLogin },
+            set: { timerManager.setLaunchAtLogin($0) }
+        )
+    }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            HStack(spacing: 6) {
+                Text("twenty")
                     .font(.headline)
+                Text("👀")
+                Spacer()
+            }
 
-                Text(timerManager.state == .working ? "Working: \(timerManager.timeFormatted)" : (timerManager.state == .breaking ? "Break: \(timerManager.timeFormatted)" : "Idle"))
-                    .font(.system(.title3, design: .monospaced))
+            // Bold countdown timer matching Windows
+            VStack(spacing: 4) {
+                Text(statusText)
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.secondary)
+                Text(timerManager.displayTime)
+                    .font(.system(size: 56, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+            }
+            .padding(.vertical, 6)
 
-                Divider()
-
+            Button(action: {
                 if timerManager.state == .idle {
-                    Button(action: {
-                        timerManager.start()
-                    }) {
-                        Label("Start Timer", systemImage: "play.fill")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
+                    timerManager.start()
                 } else {
-                    Button(action: {
-                        timerManager.stop()
-                    }) {
-                        Label("Stop Timer", systemImage: "stop.fill")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(.red)
+                    timerManager.stop()
                 }
+            }) {
+                Label(timerManager.state == .idle ? "Start" : "Stop",
+                      systemImage: timerManager.state == .idle ? "play.fill" : "stop.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .tint(timerManager.state == .idle ? .accentColor : .red)
+
+            Divider()
+
+            // Settings
+            VStack(spacing: 10) {
+                workDurationRow
+
+                durationRow(
+                    title: "Break",
+                    unit: "sec",
+                    value: $timerManager.breakDurationSeconds,
+                    range: 1...300,
+                    step: 5
+                )
 
                 Divider()
+                    .padding(.vertical, 2)
 
-                // Duration Settings
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text("Work (min):")
-                        Spacer()
-                        TextField("", value: $timerManager.workDurationMinutes, format: .number)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 50)
-                            .multilineTextAlignment(.trailing)
-                    }
+                toggleRow("Launch at login", isOn: launchAtLoginBinding)
 
-                    HStack {
-                        Text("Break (sec):")
-                        Spacer()
-                        TextField("", value: $timerManager.breakDurationSeconds, format: .number)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 50)
-                            .multilineTextAlignment(.trailing)
-                    }
-                }
-                .padding(.horizontal)
+                toggleRow("Sounds", isOn: $timerManager.soundEnabled)
 
-                Divider()
+                soundRow("Break start", selection: $timerManager.breakStartSound)
+                    .disabled(!timerManager.soundEnabled)
+                    .opacity(timerManager.soundEnabled ? 1 : 0.45)
 
+                soundRow("Break end", selection: $timerManager.breakEndSound)
+                    .disabled(!timerManager.soundEnabled)
+                    .opacity(timerManager.soundEnabled ? 1 : 0.45)
+            }
+            .padding(12)
+            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+
+            Divider()
+
+            HStack {
+                Spacer()
                 Button("Quit") {
                     NSApplication.shared.terminate(nil)
                 }
                 .buttonStyle(.plain)
-                .foregroundColor(.secondary)
-            }
-            .padding()
-            .frame(width: 220)
-        } label: {
-            HStack {
-                Image(systemName: timerManager.state == .breaking ? "eye.fill" : "eye")
-                if timerManager.state != .idle {
-                    Text(timerManager.timeFormatted)
-                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .foregroundStyle(isHoveringQuit ? Color.red : Color.secondary)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(isHoveringQuit ? Color.red.opacity(0.12) : Color.clear)
+                )
+                .onHover { isHoveringQuit = $0 }
+                .animation(.easeInOut(duration: 0.12), value: isHoveringQuit)
             }
         }
-        .menuBarExtraStyle(.window)
+        .padding(16)
+        .frame(width: 260)
+        .background(.ultraThickMaterial)
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.75))
+    }
 
-        // Break Overlay Window (kept for the 20-second break)
-        Window("Break Time", id: "break-overlay") {
-            BreakView(timerManager: timerManager)
-                .onAppear {
-                    // Make the break window float above everything and be full screen
-                    if let window = NSApplication.shared.windows.first(where: { $0.title == "Break Time" }) {
-                        window.level = .mainMenu + 1
-                        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-                        window.backgroundColor = .clear
-                        window.isOpaque = false
-                        window.hasShadow = false
-                        window.titleVisibility = .hidden
-                        window.titlebarAppearsTransparent = true
-                        window.styleMask = [.borderless, .fullSizeContentView]
+    private var workDurationRow: some View {
+        let valueBinding = timerManager.workUseSeconds
+            ? $timerManager.workDurationSeconds
+            : $timerManager.workDurationMinutes
+        let range: ClosedRange<Double> = timerManager.workUseSeconds ? 1...7200 : 1...120
+        let step: Double = timerManager.workUseSeconds ? 5 : 1
 
-                        if let screen = NSScreen.main {
-                            window.setFrame(screen.frame, display: true)
-                        }
-                    }
+        return HStack(spacing: 6) {
+            Text("Work")
+            Spacer()
+            TextField("", value: valueBinding, format: .number)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 44)
+                .multilineTextAlignment(.trailing)
+                .monospacedDigit()
+                .onSubmit {
+                    timerManager.clampSettings()
                 }
+            Picker("", selection: $timerManager.workUseSeconds) {
+                Text("min").tag(false)
+                Text("sec").tag(true)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .controlSize(.small)
+            .frame(width: 68)
+            Stepper("", value: valueBinding, in: range, step: step)
+                .labelsHidden()
+                .controlSize(.small)
         }
-        .windowStyle(.hiddenTitleBar)
-        .onChange(of: timerManager.state) { oldState, newState in
-            if newState == .breaking {
-                openWindow(id: "break-overlay")
-                NSApplication.shared.activate(ignoringOtherApps: true)
-            } else if oldState == .breaking {
-                dismissWindow(id: "break-overlay")
+    }
+
+    private func durationRow(
+        title: String,
+        unit: String,
+        value: Binding<Double>,
+        range: ClosedRange<Double>,
+        step: Double
+    ) -> some View {
+        HStack(spacing: 6) {
+            Text(title)
+            Spacer()
+            TextField("", value: value, format: .number)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 44)
+                .multilineTextAlignment(.trailing)
+                .monospacedDigit()
+                .onSubmit {
+                    timerManager.clampSettings()
+                }
+            Text(unit)
+                .foregroundStyle(.secondary)
+                .frame(width: 68, alignment: .leading)
+            Stepper("", value: value, in: range, step: step)
+                .labelsHidden()
+                .controlSize(.small)
+        }
+    }
+
+    private func toggleRow(_ title: String, isOn: Binding<Bool>) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            Toggle("", isOn: isOn)
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .controlSize(.small)
+        }
+    }
+
+    private func soundRow(_ title: String, selection: Binding<String>) -> some View {
+        HStack {
+            Text(title)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Picker("", selection: selection) {
+                ForEach(TimerManager.availableSounds, id: \.self) { sound in
+                    Text(sound).tag(sound)
+                }
+            }
+            .labelsHidden()
+            .controlSize(.small)
+            .frame(width: 110)
+            .onChange(of: selection.wrappedValue) { _, newValue in
+                timerManager.previewSound(newValue)
             }
         }
     }

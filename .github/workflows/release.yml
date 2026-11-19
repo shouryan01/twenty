@@ -17,7 +17,7 @@ jobs:
     name: Build Windows (x64)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/dotnet-publish
         with:
           project: Windows/twenty.csproj
@@ -29,7 +29,7 @@ jobs:
     name: Build macOS (Apple silicon)
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Build app (unsigned)
         run: >
@@ -46,7 +46,7 @@ jobs:
           APP=$(find build/Build/Products/Release -maxdepth 1 -name "*.app" | head -n 1)
           ditto -c -k --keepParent "$APP" "dist/twenty-${{ env.VERSION }}-macos-arm64.zip"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: twenty-macos-arm64
           path: dist/*.zip
@@ -59,9 +59,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
           merge-multiple: true
@@ -70,7 +70,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "v${{ env.VERSION }}" artifacts/*.zip \
+          gh release create "v${{ env.VERSION }}" artifacts/* \
             --target "${{ github.sha }}" \
             --title "v${{ env.VERSION }}" \
             --generate-notes
