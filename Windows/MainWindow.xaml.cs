@@ -140,7 +140,6 @@ namespace twenty
                 {
                     // Started by Windows at sign-in: go to the tray and start the timer.
                     this.Hide();
-                    MyNotifyIcon.Visibility = Visibility.Visible;
                     StartButton_Click(this, new RoutedEventArgs());
                 }
             };
@@ -231,8 +230,29 @@ namespace twenty
             if (this.WindowState == WindowState.Minimized)
             {
                 this.Hide();
-                MyNotifyIcon.Visibility = Visibility.Visible;
             }
+        }
+
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hwnd);
+
+        private void NotifyIcon_RightMouseUp(object sender, RoutedEventArgs e)
+        {
+            // Hardcodet 2.0.1 opens right-click menus only on WM_CONTEXTMENU.
+            // Also handle WM_RBUTTONUP for shell callbacks that omit that message.
+            var menu = MyNotifyIcon.ContextMenu;
+            if (menu == null || menu.IsOpen) return;
+
+            menu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
+            menu.HorizontalOffset = 0;
+            menu.VerticalOffset = 0;
+            menu.IsOpen = true;
+
+            // Foreground the popup so keyboard input and click-away dismissal work
+            // even while the main window is hidden.
+            var source = PresentationSource.FromVisual(menu) as HwndSource;
+            if (source != null) SetForegroundWindow(source.Handle);
+            menu.Focus();
         }
 
         private void NotifyIcon_DoubleClick(object sender, RoutedEventArgs e)
@@ -256,7 +276,6 @@ namespace twenty
             this.Show();
             this.WindowState = WindowState.Normal;
             this.Activate();
-            MyNotifyIcon.Visibility = Visibility.Collapsed;
         }
 
         private bool _exiting;
@@ -268,7 +287,6 @@ namespace twenty
                 // The close button hides the window. The app keeps running in the system tray.
                 e.Cancel = true;
                 this.Hide();
-                MyNotifyIcon.Visibility = Visibility.Visible;
                 return;
             }
             MyNotifyIcon.Dispose();

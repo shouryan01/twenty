@@ -54,7 +54,7 @@ The app is not code-signed, so Windows SmartScreen may show "Windows protected y
 ### Features
 
 - **Break overlay on every monitor.** When a break starts, a black screen with a countdown covers each monitor you have. You cannot remove it until the break ends.
-- **System tray.** The close button hides the window. The app keeps running in the system tray. To close it fully, right-click the tray icon and choose **Exit**.
+- **System tray.** The tray icon stays available while the app is running, even when the main window is open. The close button hides the window. The app keeps running in the system tray. To close it fully, right-click the tray icon and choose **Exit**.
 - **Start with Windows.** Turn on the switch in settings. The app then starts hidden in the tray at sign-in and starts the timer.
 - **Saved settings.** The work time (minutes) and break time (seconds) are saved between sessions. The defaults are 20 minutes and 20 seconds.
 
