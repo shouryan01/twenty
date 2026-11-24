@@ -13,8 +13,36 @@ env:
   VERSION: 0.1.${{ github.run_number }}
 
 jobs:
+  changes:
+    name: Detect changed platforms
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      windows: ${{ steps.targets.outputs.windows }}
+      macos: ${{ steps.targets.outputs.macos }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Test change detection
+        run: python3 .github/scripts/test_detect_build_targets.py
+
+      - name: Detect build targets
+        id: targets
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        run: >
+          python3 .github/scripts/detect-build-targets.py
+          --event "$EVENT_NAME" --before "$BEFORE_SHA" --after "$AFTER_SHA"
+
   build-windows:
     name: Build Windows
+    needs: changes
+    if: needs.changes.outputs.windows == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -26,6 +54,8 @@ jobs:
 
   build-macos:
     name: Build macOS (Apple silicon)
+    needs: changes
+    if: needs.changes.outputs.macos == 'true'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
@@ -54,7 +84,14 @@ jobs:
 
   release:
     name: Create release
-    needs: [build-windows, build-macos]
+    needs: [changes, build-windows, build-macos]
+    # A skipped platform must not skip release; failed/cancelled builds must.
+    if: >-
+      ${{ always() && !cancelled() &&
+          needs.changes.result == 'success' &&
+          (needs.build-windows.result == 'success' || needs.build-windows.result == 'skipped') &&
+          (needs.build-macos.result == 'success' || needs.build-macos.result == 'skipped') &&
+          (needs.build-windows.result == 'success' || needs.build-macos.result == 'success') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
